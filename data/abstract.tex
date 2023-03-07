@@ -2,12 +2,32 @@
 
 % 中英文摘要
 \begin{cabstract}
-本篇文档主要介绍{\bf 北航毕业设计论文\LaTeX{}模板}使用和相关软件环境的安装配置，
-以及本模板所遵循的开源协议等。
+    许多用于小样本学习的元学习方法依赖于简单的基础学习器，例如最近邻分类器。
+    然而，即使在少样本的情况下，经过区分训练的线性预测器也可以提供更好的泛化。
+    我们建议使用这些预测器作为基础学习器来学习小样本学习的表示，
+    并展示它们在一系列小样本识别基准中在特征大小和性能之间提供更好的权衡。
+    我们的目标是学习在新类别的线性分类规则下可以很好地泛化的特征嵌入。
+    为了有效地解决目标，我们利用了线性分类器的两个特性：
+    凸问题最优条件的隐式微分和优化问题的对偶公式。
+    这使我们能够在适度增加计算开销的情况下使用具有改进泛化的高维嵌入。
+    我们的方法名为MetaOptNet，在miniImageNet、tieredImageNet、
+    CIFAR-FS和FC100小样本学习基准上实现了最先进的性能。
+
+
 \end{cabstract}
 
 \begin{eabstract}
-Here is the Abstract in English. And this is a test sentence, just for
-a test to see how the buaathesis works. You can just ignore this.\par
-This is another pargraph.
+    Many meta-learning approaches for few-shot learning rely on 
+    simple base learners such as nearest-neighbor classifiers.
+     However, even in the few-shot regime, discriminatively trained linear predictors can offer better generalization. 
+     We propose to use these predictors as base learners to learn representations for 
+     few-shot learning and show they offer better tradeoffs between feature size and 
+     performance across a range of few-shot recognition benchmarks. 
+     Our objective is to learn feature embeddings that generalize well under a 
+     linear classification rule for novel categories. To efficiently solve the objective, 
+     we exploit two properties of linear classifiers: implicit differentiation of the optimality 
+     conditions of the convex problem and the dual formulation of the optimization problem. 
+     This allows us to use high-dimensional embeddings with improved generalization at a modest increase 
+     in computational overhead. Our approach, named MetaOptNet, achieves state-of-the-art performance on 
+     miniImageNet, tieredImageNet, CIFAR-FS, and FC100 few-shot learning benchmarks.
 \end{eabstract}

@@ -55,7 +55,7 @@ if not exist %mythesis%.bbl goto biberr
 call xelatex %mythesis%
 call xelatex %mythesis%
 echo 成功生成论文
-call %mythesis%.pdf
+:: call %mythesis%.pdf
 goto end
 
 ::======================================
