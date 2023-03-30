@@ -1,11 +1,12 @@
-\chapter{模块2 解决方法}
+\chapter{模块2 (解决方案)}
+
 
 \section{问题描述}
 
-给定训练集 $D^{train} = \{(x_t,y_t)\}^{T}_{t=1}$ ，基学习器 $A$ 的目标是估计预测器 $y=f(x,\theta) $
-的参数 $\theta$ 使得其在未见的测试集$D^{test} = \{(x_a, y_a)\}^{Q}_{t=1}$上泛化较好，
-通常假定训练集和测试集采样于相同分布，并使用参数$\phi$为的嵌入模$f_{\phi}$型将样本域映射到特征空间。
-对于基于优化的学习器，参数通过最小化训练数据上的经验损失以及正则项（鼓励模型简易）获得。
+给定训练集 $D^{train} = \{(x_t,y_t)\}^{T}_{t=1}$ ，基学习器 $A$ 的目标是利用参数 $\theta$ 对预测器 $y=f(x,\theta)$ 进行估计,
+以在未见的测试集 $D^{test} = \{(x_a, y_a)\}^{Q}_{t=1}$ 上实现更好的泛化能力，
+通常假设训练集和测试集采样自相同分布，并使用参数 $\phi$的嵌入模型$f_{\phi}$将样本域映射到特征空间。
+对于基于优化的学习器，参数通过最小化训练数据上的经验损失以及正则项（以鼓励模型的简洁性）获得。
 
 \begin{equation}
     \theta = A(D^{train}; \phi) = argmin_{\theta}L^{base}(D^{train}; \theta, \phi) + R(\theta)
@@ -13,89 +14,124 @@
 
 其中，$L^{base}$ 是损失函数，$R(\theta)$ 是正则项，在训练数据有限的情况下，正则项在模型的泛化方面扮演很重要的角色。
 
-少量学习的元学习方法的目的是
-的泛化误差最小。
-任务分布中的泛化误差最小。具体来说，这
-可以被认为是在一个任务的集合上学习：
-T = {(Di train, Di test)}I i=1，通常被称为元训练集。元组（Ditrain, Ditest）描述了一个训练
-和一个测试数据集，或一个任务。我们的目标是学习一个
-嵌入模型φ，在给定基础学习者的情况下，使泛化（或测试）误差最小。
-在给定基础学习者A的情况下，在不同的任务中使泛化（或测试）误差最小。
-学习目标是：
+为了最小化泛化误差，少样本元学习方法旨在学习任务分布中的最优模型，这可以看作是在一个任务集合上进行学习：
+$T = \{(D_{i}^{train}, D_{i}^{test})\}^{I}_{i=1}$，通常被称为元训练集。
+通过元组$(D_i^{train}, D_i^{test})$描述的训练和测试数据集，或任务，
+我们的目标是学习一个嵌入模型$\phi$，使得在给定基础学习者$A$的情况下，在不同任务中达到最小化泛化（或测试）误差的效果。
+
+为了实现这一目标，我们的学习目标是：
 
 \begin{equation}
     \min_{\phi} E_{T} [L^{meta}(D^{test}; \theta, \phi), where \theta = A(D^{train}, \phi)]
 \end{equation}
 
-图1说明了一个单一任务的训练和测试情况。
-任务的训练和测试。一旦学会了嵌入模型fφ，它的泛化作用就会在一组保留的任务（通常被称为元测试集）上进行估计。
-称为元测试集）S = {(Djtrain, Djtest)}J j=1 计算出来的。
-为：
+图1展示了单一任务的训练和测试过程。一旦学习到嵌入模型 $f_{\phi}$，它的泛化性能可以在一个保留的任务集合（通常称为元测试集）上进行评估。元测试集 
+$S = \{(D_j^{train}, D_j^{test})\}^J_{j=1}$ 可以用公式来计算：
 
 \begin{equation}
-    
+    E_S[L^{meta}(D^{test}; \theta, \phi), where \theta = A(D^{train}; \phi)]
 \end{equation}
 
-根据之前的工作[22，8]，我们把估计方程2和3中的期望值的阶段分别称为元训练和
-元测试。在元训练期间，我们保留了一个
-额外保留的元验证集来选择元学习器的超参数并挑选最佳嵌入
-模型。
+根据之前的研究，公式2和3中期望值的估计分别被称为元训练和元测试阶段。
+在元训练阶段，我们会保留一个额外的验证集来选择元学习器的超参数并挑选最佳的嵌入模型。
 
 \section{创新思想}
 本文将可微的二次规划求解器和不同的线性分类器综合起来。利用以上两个特性，本文实现了在
 计算成本略有增加的情况下提供了比最临近分类器更大的收益。
 
-本文的方法使用线性分类器，因为它能够规划为凸学习问题。
+本文利用线性分类器的凸优化性质，将线性分类器作为基础学习器应用于元学习，用于解决可计算性问题。
 
-本文的工作主要与用后向传播进行过程优化的技术相关。
 
 \section{具体方法}
+\subsection{任务集}
+少样本学习使用K-way，N-shot分类任务对模型进行评估，
+其中K表示类别数，$N$表示每个类别的训练样本数，通常取较小的值，
+如$N\in{1,5}$。
+虽然miniImageNet等数据集没有明确给出训练集和测试集$(D_i^{train}, D_i^{test})$，
+但每个元学习任务可以在元训练阶段即兴构建，这被称为“episode”。
+例如，一个episode $\tau_i=(D_i^{train}, D_i^{test})$ 可以按以下方式进行采样：
 
-任务（episode）集：少样本学习benmarks如miniImageNet[22]以K-way，N-shot分类任务估计模型，这里K表示类数，
-N表示每个类的训练样本数。少量样本学习技巧由小值的N选择来评价，典型地。实践上，这些数据集并不显式包含，
-但元学习的每个任务可以通过在元训练阶段中即兴（on-the-fly）构造，称（task）之为一个episode。例如在工作[33,22]，一个任务（或episode）
-以如下方式被采样到:
+总体类集为$C^{train}$, 对于每个 episode，首先类$C_i$(包含来自$C^{train}$的K类)被有放回抽样得到，
+然后训练集$D_i^{train} = \{(x_n, y_n) | n=1,...,N \times K, y_n \in C_i\}$(每个类包含N个图像)被采样；
+最后测试集$D_i^{test} = \{(x_n, y_n) | n = 1,...,Q \times K, y_n \in C_i\}$（每个类包含Q个图像）被采样；
 
-总体类集为, 对于每个episode，首先类(包含来自的K类)被有放回抽样得到，然后训练集(每个类包含N个图像)被采样；最后测试集（每个类包含Q个图像）被采样；
+这里需要无放回抽样，如$D_i^{train} \cap D_i^{test} = \emptyset $，以优化泛化误差。以同样的方式从$C^{val}$
+和$C^{test}$各自即兴构造元验证集（meta-validation）和元测试集（meta-test）。
+为了度量嵌入模型对未见类的泛化，$C^{train}, C^{val}, C^{test}$需被互斥选择；
 
-注意强调需要无放回抽样，如，以优化泛化误差。以同样的方式从和各自即兴构造元验证meta-validation集和元测试meta-test集。
-为了度量嵌入模型对未见类的泛化，需被互斥选择；
+\subsection{凸基学习器}
 
-由于后续需要计算任务期望，基学习器必须是高效的，并且为了估计嵌入模型的参数，
-关于的梯度计算也必须是高效的，这就鼓励选择简单的基学习器如最近类均值nearest-class-mean[28]，
-其参数是很容易计算的且目标函数是可微的。
+当选择基学习器$A$时，必须考虑计算的效率，因为基学习器的计算效率直接影响到方程2中期望值的计算。
+同时，在估计嵌入模型参数$\phi$时，也必须能够有效地计算任务测试误差$L^{meta}(D^{test}; \theta,\phi)$相对于$\phi$的梯度，
+这促使简单的基学习器出现，例如最近类别平均值，其中基学习器$\theta$的参数易于计算，且目标是可微的。
 
-文中考虑基于多类线性分类器如SVMs[5,34]，LR,岭回归，
-因它们的目标函数都是凸性的。例如k类线性SVM可以写作，
-k类SVM的Crammer-Singer [ on the algorithmic implementation of multiclass kernel-based vector machines ] 
-规划为
+我们考虑基于多类线性分类器的基学习器（例如支持向量机（SVM）、逻辑回归和岭回归），
+其中基学习器的目标是凸的。例如，K类线性SVM可以写成$\theta = \{w_k\}^K_{k=1}$的形式。克拉默和辛格提出的多类支持向量机的公式是：
 
-其中，C是正则化参数，是Kronecker delta 函数；
+\begin{equation}
+\begin{aligned}
+   & \theta = A(D^{train}; \phi) = \arg \min_{\{w_k\}}\min_{\{\xi_k\}}\frac{1}{2}\Sigma_k||w_k||_2^2 + C \Sigma_n \xi_n\\
+   & subject \space to \\
+   & w_{y_n} \cdot f_{\phi}(x_n)-w_k \cdot f_\phi (x_n) \ge 1 - \delta_{y_n,k} - \xi_n, \forall n, k\\
+\end{aligned}
+\end{equation}
 
+这个公式中的 $D^{train} = \{(x_n, y_n)\}$ 表示训练集，其中每个样本 $x_n$ 都有一个真实标签 $y_n$。
+$C$ 是一个正则化参数，用于控制模型的复杂度和泛化能力。$δ_{·,·}$是克罗内克（Kronecker）$δ$ 函数.
 
-为了使得系统端到端可训练，要求SVM求解器关于输入应该是可微的，
-例如应该能够计算\left\{ \frac{\partial{\theta}}{\partial{f_{\phi}(x_{n})}}  \right\} _{n=1}^{N\times K}；
-SVM的目标是凸的(具有唯一最优值),这允许运用关于最优条件（KKT）的隐函数理论[12,7,2]获得必要的梯度。
+\subsubsection{SVM目标函数的梯度}
 
+从图1中可以看出，为了实现端到端的训练，我们需要对SVM求解器的解进行微分，以便计算出
+$\{\frac{\partial\theta}{\partial f_\phi(x_n)}\}^{N \times K}_{n=1}$。
+由于SVM的目标是凸优化问题，因此具有唯一的最优解，可以在最优（KKT）条件下使用隐函数定理来获得所需的梯度。
+为了完整起见，我们还推导了该凸优化问题的隐函数定理形式，考虑以下凸优化问题：
 
-为了完备性的缘故，下面推导凸优化问题的定理形式，考虑下面的凸优化问题：
+\begin{equation}
+    \begin{aligned}
+        minimize\space &f_0(\theta, z)\\
+        subject\space to &f(\theta, z) \le 0\\
+        &h(\theta, z)=0\\
+    \end{aligned}
+\end{equation}
 
-其中向量是问题的优化变量，向量是优化问题的输入参数，即。
+其中向量$\theta \in \mathbb{R}^d$是问题的优化变量，向量$z \in \mathbb{R}^e$是优化问题的输入参数，即在我们的情况下是$\{f_\phi(x_n)\}$。
+我们可以通过求解以下拉格朗日函数的鞍点$(\tilde{\theta}, \tilde{\lambda}, \tilde{\nu})$来优化目标：
 
-通过求解下面拉格朗日函数的鞍点来优化目标:
+\begin{equation}
+    L(\theta, \lambda, \nu, z) = f_0(\theta, z) + \lambda^{T} f(\theta, z) + \nu^Th(\theta, z)
+\end{equation}
 
-换句话说可以通过获得目标函数最优值，
+换言之，我们可以通过解决 $g(\tilde{\theta}, \tilde{\lambda}, \tilde{\nu}, z  ) = 0$ 来获得目标函数的最优解，其中
 
+\begin{equation}
+    g(\theta, \lambda, \nu, z ) = \left [
+        \begin{array}{l}
+            \nabla_\theta L(\theta, \lambda, \nu,z)\\
+            diag(\lambda)f(\theta, z)\\
+            h(\theta, z)
+        \end{array}
+        \right ]
+\end{equation}
 
-给定函数，用表示其雅可比矩阵;
+对于一个函数 $f(x) : \mathbb{R}^n \rightarrow \mathbb{R}^m$，将$D_xf(x)$ 表示为它的 Jacobian 矩阵 $\in \mathbb{R}_{m\times n}$.
 
-定理1（自on the differentiability of the solution to convex optimization problems） 假定，若所有导数存在，则
+\subsubsection{定理1}
+（来自Barratt）假设 $g(\tilde{\theta}, \tilde{\lambda}, \tilde{\nu}, z  ) = 0$ 。那么，当所有导数都存在时，
+\begin{equation}
+    D_z\tilde{\theta} = -D_{\theta}g(\tilde{\theta}, \tilde{\lambda}, \tilde{\nu}, z)^{-1}D_zg(\tilde{\theta}, \tilde{\lambda}, \tilde{\nu}, z)
+\end{equation}
+通过应用隐函数定理于KKT条件，我们得到了最优解$\tilde{\theta}$对输入数据梯度的闭合形式表达式，这是凸问题相对于通用优化问题的优势之一。
+这个结果的意义在于，我们不需要反向传播整个优化轨迹来计算梯度，也不需要消耗过多的内存。由于最优解的唯一性，这种方法是可行的。
 
-这个结果由对KKT条件应用隐函数定理所得，因此，一旦计算得到最优解，便可以获得的梯度关于输入数据的闭式表达式，这就消除了通过完全的优化路径进行后向传播的必要，因为这个解决方案由于其唯一性，它并不依赖路径或初始化，这也节省了内存，这正是凸优化问题比一般优化问题的优势所在。
+\subsubsection{时间复杂度}
+为了在前向传递过程中应用该方法（方程4），需要进行QP求解，其时间复杂度为$O(d^3)$，其中$d$是优化变量的数量。
+主要的时间消耗在分解KKT矩阵上，这是原始对偶内点法的基本操作。
+在后向传递过程中，需要使用定理1来解决方程8，其复杂度为$O(d^2)$（前提是在前向传递过程中已进行矩阵分解）。
+当嵌入维度较大时，前向和后向传递的成本都很高。
 
-时间复杂度：在前向传递过程（方程4）中使用此方法要求进行QP求解，时间复杂度为，其中d是优化变量的数量，时间主要消耗在分解KKT矩阵（原始对偶内部点方法所用）。后向传递过程要求以定理1求解方程8，其复杂度是，（假定在前向传递过程中已经进行了分解）。当嵌入的维度较大时，前向和后向传递代价都比较高。
+\subsubsection{对偶学习}
 
-对偶规划：方程4的目标对偶规划允许处理对嵌入维度上的低依赖性，故可以重写为如下式，
+由于方程4中的目标对偶规划本身具有处理嵌入维度上的低依赖性，因此可以重写为如下形式：
 令
 \begin{equation}
     w_{k}(\alpha^{k}) = \sum_{n}{\alpha_{n}^{k} f_{\phi}(x_{n})} \quad \forall k.
@@ -103,41 +139,42 @@ SVM的目标是凸的(具有唯一最优值),这允许运用关于最优条件�
 
 可以在对偶空间优化  
 \begin{equation}
-    max_{\alpha ^{k}} \big[ -\frac{1}{2} \sum_{k}\parallel\omega_{k}(\alpha^{k})\parallel_{2}^{2} + \sum_{n}\alpha_{n}^{y_{n}}\big]
-    \\ subject \ to \quad \alpha_{n}^{y_{n}} \leq C, \ \alpha_{n}^{k} \leq 0 \quad \forall k \neq y_{n} , 
-    \\ \qquad \sum_{k}{\alpha_{n}^{k}=0 \quad \forall n.} \tag{10}
+    \begin{aligned}
+        &max_{\alpha ^{k}} \big[ -\frac{1}{2} \sum_{k}\parallel\omega_{k}(\alpha^{k})\parallel_{2}^{2} + \sum_{n}\alpha_{n}^{y_{n}}\big]\\ 
+        &subject \ to \quad \alpha_{n}^{y_{n}} \leq C, \ \alpha_{n}^{k} \leq 0 \quad \forall k \neq y_{n} , \\ 
+        &\qquad \sum_{k}{\alpha_{n}^{k}=0 \quad \forall n.}\\
+    \end{aligned}
 \end{equation}
 
-这产生了一个在对偶变量上的二次规划（QP），
+% ---TODO---
+
+这产生了一个在对偶变量$\{\alpha^k\}^K_{K=1}$上的二次规划（QP），
 注意这里优化变量的数量是训练样本数量乘以类数，
 对于少样本学习而言这通常要比特征维度的数量要小。
-使用[OptNet:differentiable optimization as a layer in neural networks]
+我们使用[OptNet:differentiable optimization as a layer in neural networks]
 （实现了一个可微的基于GPU的QP求解器）解方程10的对偶二次规划。
 实践上，QP求解所耗时间同时使用ResNet-12结构计算特征所耗时间是近似的，
-因此每次迭代的总体速度同基于简单基学习器的方法（如Prototypical Networks中使用的最近类原型均值[28]）并没有大的不同。
+因此每次迭代的总体速度同基于简单基学习器的方法（如Prototypical Networks中使用的最近类原型均值）并没有大的不同。
 
-与此本同时，[Meta-learning with differentiable closed-form solvers]采用岭回归作为基学习器，
+同时，[Meta-learning with differentiable closed-form solvers]采用岭回归作为基学习器，
 也有一个闭式解。尽管岭回归或许不是最适合分类问题的，其工作表明通过最小化关于one-hot labels的平方误差来训练模型在实践上工作得很好。
 对于岭回归，最终的优化也是一个QP，因此也能够在本文的框架中实现：
-
-其中定义同方程9。
+\begin{equation}
+    max_{\alpha^{k}} \big[ - \frac{1}{2} \sum_{k} \parallel\omega_{k}(\alpha^{k}) \parallel_{2}^{2} - \frac{\lambda}{2} \sum_{k}{\parallel\alpha^{k}\parallel_{2}^{2}}+\sum_{n}{\alpha_{n}^{y_{n}}} \big] 
+\end{equation}
+其中$w_k$定义同方程9。
 
 线性SVM和岭回归之间的比较表明线性SVM规划具有稍微优势。
 
-元学习和嵌入模型：对于少量样本学习的元学习方法，目标在于最小化（采样于）同任务分布下的不同任务的泛化误差，
-具体讲就是在任务集合上学习，即在元训练集上学习，其中描述了一个训练和测试集（即一个任务），
-学习目标是给定一个基学习器，学习一个嵌入模型能够最小化这些任务上的泛化误差：
+\subsection{元学习目标}
 
+为了评估模型的性能，我们评估从同一任务中采样的测试数据的负对数似然。因此，我们可以将方程2的元学习目标重新表达为：
 
+\begin{equation}
+    L^{meta}(D^{test};\theta,\phi,\gamma)=\sum_{(x,y) \in D^{test}}{ \big[ -\gamma \omega_{y} \cdot f_{\phi}(x) + log\sum_{k}{exp(\gamma\omega_{k}\cdot f_{\phi}(x))}\big]}
+\end{equation}
 
-一旦学习了嵌入模型，其泛化能力由held-out任务（也称meta-test集）所估计：
+其中$\theta=A(D^{train};\phi)=\{\omega_{k}\}_{k=1}^{K}$，$\gamma$是一个可学习的缩放参数。
+在少样本学习的先前工作中，调整预测分数的方法通过可学习的比例因子$\gamma$在最近类别均值和岭回归基学习器下提高了性能。
 
-在元训练阶段中，保持额外的held-out meta-validation 集来选择元学习器的超参和挑选最好的嵌入模型；
-
-为了度量模型的性能，从相同任务采样出测试数据来计算负对数似然。因此，可以重新表达方程2的元学习目标为：
-
-其中，是一个可学习的尺度参数。
-
-先前的少样本学习工作[20,3,10]暗示，在使用最近类均值和岭回归基学习器的方法中，
-通过一个可学习的尺度参数调节预测分数提供了更好的性能。经验地发现插入对使用SVM作为基学习器的元学习也是有益的。
-尽管选择其他的测试损失函数，如合页损失，也是可以的，但对数似然方式在实验中工作的最好。
+我们实验发现，在SVM基学习器下插入$\gamma$是有益的。虽然测试损失的其他选择，例如hinge损失，是可能的，但负对数似然在我们的实验中表现最好。
