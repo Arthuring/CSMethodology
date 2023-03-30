@@ -146,19 +146,15 @@ $\{\frac{\partial\theta}{\partial f_\phi(x_n)}\}^{N \times K}_{n=1}$。
     \end{aligned}
 \end{equation}
 
-% ---TODO---
+我们可以将方程4重写为一个在对偶变量$\{\alpha^k\}^K_{K=1}$上的二次规划（QP），
+这里的优化变量数量是训练样本数量乘以类数，通常比特征维度的数量小，特别适用于少样本学习。
+为了解决对偶二次规划，我们使用了一个可微的基于GPU的QP求解器[OptNet: differentiable optimization as a layer in neural networks]。
+实践表明，QP求解所需的时间与使用ResNet-12计算特征的时间相当，因此与使用基于简单基学习器（例如Prototypical Networks中使用的最近类原型均值）相比，
+每次迭代的总体速度没有太大差异。
 
-这产生了一个在对偶变量$\{\alpha^k\}^K_{K=1}$上的二次规划（QP），
-注意这里优化变量的数量是训练样本数量乘以类数，
-对于少样本学习而言这通常要比特征维度的数量要小。
-我们使用[OptNet:differentiable optimization as a layer in neural networks]
-（实现了一个可微的基于GPU的QP求解器）解方程10的对偶二次规划。
-实践上，QP求解所耗时间同时使用ResNet-12结构计算特征所耗时间是近似的，
-因此每次迭代的总体速度同基于简单基学习器的方法（如Prototypical Networks中使用的最近类原型均值）并没有大的不同。
-
-同时，[Meta-learning with differentiable closed-form solvers]采用岭回归作为基学习器，
-也有一个闭式解。尽管岭回归或许不是最适合分类问题的，其工作表明通过最小化关于one-hot labels的平方误差来训练模型在实践上工作得很好。
-对于岭回归，最终的优化也是一个QP，因此也能够在本文的框架中实现：
+同时，[Meta-learning with differentiable closed-form solvers]也采用了岭回归作为基学习器，
+并且它也有一个闭式解。尽管岭回归可能不是最适合分类问题的模型，但是它的工作表明，在实践中，
+通过最小化关于one-hot标签的平方误差来训练模型可以起到很好的效果。最终，对于岭回归，优化问题也是一个QP，因此可以在本文的框架中实现：
 \begin{equation}
     max_{\alpha^{k}} \big[ - \frac{1}{2} \sum_{k} \parallel\omega_{k}(\alpha^{k}) \parallel_{2}^{2} - \frac{\lambda}{2} \sum_{k}{\parallel\alpha^{k}\parallel_{2}^{2}}+\sum_{n}{\alpha_{n}^{y_{n}}} \big] 
 \end{equation}
@@ -175,6 +171,6 @@ $\{\frac{\partial\theta}{\partial f_\phi(x_n)}\}^{N \times K}_{n=1}$。
 \end{equation}
 
 其中$\theta=A(D^{train};\phi)=\{\omega_{k}\}_{k=1}^{K}$，$\gamma$是一个可学习的缩放参数。
-在少样本学习的先前工作中，调整预测分数的方法通过可学习的比例因子$\gamma$在最近类别均值和岭回归基学习器下提高了性能。
+之前的研究表明，通过可学习的比例因子$\gamma$调整预测分数，在最近类别均值和岭回归基学习器下可以提高性能。
 
-我们实验发现，在SVM基学习器下插入$\gamma$是有益的。虽然测试损失的其他选择，例如hinge损失，是可能的，但负对数似然在我们的实验中表现最好。
+我们的实验证明，在SVM基学习器下插入可学习比例因子$\gamma$也是有效的。尽管我们可以选择其他测试损失函数，如hinge loss，但在我们的实验中，负对数似然表现最佳。
